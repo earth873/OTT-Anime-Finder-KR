@@ -1,0 +1,27 @@
+{
+  "mode": "offline",
+  "total": 30,
+  "baseline_title_candidates": 22,
+  "baseline_review_required": 8,
+  "identity_verified": 3,
+  "review_required": 27,
+  "not_found": 0,
+  "baseline_subscription_hints": {
+    "Netflix": 19,
+    "TVING": 21,
+    "Laftel": 0
+  },
+  "subscription_hints": {
+    "Netflix": 19,
+    "TVING": 20,
+    "Laftel": 0
+  },
+  "metadata_count_fields": 29,
+  "season_details": 0,
+  "api_errors": 0,
+  "actual_ott_episode_verified": 0,
+  "accuracy_all_30": null,
+  "accuracy_note": "No independent reference labels for all 30; identity coverage is not accuracy.",
+  "revalidated_at_utc": "2026-10-11T11:50:52.377048+00:00",
+  "input_sha256": "8941d0cf153887f5269019579d7ff77126dd46e9e1912af65268b25b58761d5a"
+}

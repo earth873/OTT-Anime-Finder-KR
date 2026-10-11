@@ -1,0 +1,51 @@
+{
+  "코노스바": {
+    "tmdb_id": 65844,
+    "year": 2016,
+    "original_names": ["この素晴らしい世界に祝福を！"],
+    "display_title_ko": "이 멋진 세계에 축복을!",
+    "search_titles": ["KonoSuba: God's Blessing on This Wonderful World!", "이 멋진 세계에 축복을!"],
+    "reference_verified": true,
+    "source_url": "https://www.themoviedb.org/tv/65844-konosuba-god-s-blessing-on-this-wonderful-world?language=vi-VN",
+    "note": "본편 2016. v0.1 ID 203040은 폭염 스핀오프. 공개 TMDB 페이지의 ID/원제/연도만 참조; 최신 회차 수를 옮기지 않음."
+  },
+  "헌터×헌터": {
+    "tmdb_id": 46298,
+    "year": 2011,
+    "original_names": ["HUNTER×HUNTER"],
+    "search_titles": ["Hunter x Hunter", "HUNTER×HUNTER"],
+    "reference_verified": true,
+    "require_edition_choice": true,
+    "source_url": "https://www.themoviedb.org/tv/46298-hunterxhunter?language=es-SV",
+    "note": "46298은 2011판 후보. 표본 제목은 1999/2011을 지정하지 않았으므로 자동 확정 금지. https://www.ntv.co.jp/english/pc/2011/08/hunter-x-hunter.html"
+  },
+  "최애의 아이": {
+    "tmdb_id": 203737,
+    "year": 2023,
+    "original_names": ["【推しの子】", "〖推しの子〗"],
+    "display_title_ko": "최애의 아이",
+    "search_titles": ["Oshi No Ko", "【최애의 아이】", "최애의 아이"],
+    "reference_verified": true,
+    "source_url": "https://www.themoviedb.org/tv/203737",
+    "note": "괄호 표현은 정규화하고 표본 한국어 제목을 표시 별칭으로 보존. 동명의 실사판은 ID/연도가 일치하지 않음."
+  },
+  "코드 기아스": {
+    "tmdb_id": 31724,
+    "year": 2006,
+    "original_names": ["コードギアス 反逆のルルーシュ"],
+    "display_title_ko": "코드 기아스: 반역의 를르슈",
+    "search_titles": ["Code Geass: Lelouch of the Rebellion", "코드 기아스: 반역의 를르슈"],
+    "reference_verified": true,
+    "source_url": "https://www.themoviedb.org/tv/31724/season/1?language=es-MX",
+    "note": "본편 R1(2006)과 R2, 리메이크 영화/다른 스핀오프를 구분. 공식 본편 사이트 https://geass.jp/first/new.html 과 교차 확인."
+  },
+  "원피스": {
+    "tmdb_id": 37854,
+    "year": 1999,
+    "original_names": ["ワンピース"],
+    "search_titles": ["One Piece", "ワンピース"],
+    "reference_verified": false,
+    "source_url": "https://one-piece.com/anime/1/index.html",
+    "note": "방송 공식 사이트에서 1999-10-20/절대 회차 확인. TMDB ID는 baseline 후보로 유지(페이지 접근 실패). TMDB 시즌/스토리 아크/OTT 파트는 자동 대응 금지."
+  }
+}
