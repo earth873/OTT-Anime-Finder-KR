@@ -30,3 +30,38 @@ jobs:
       - name: Revalidate snapshot without changing tracked data
         shell: pwsh
         run: python scripts/validate_v02.py --mode offline --limit 30 --output "$env:RUNNER_TEMP/tmdb_ci_check.csv"
+
+  postgres-validation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: ott_anime_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ott_anime_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGDATABASE: ott_anime_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply baseline schema
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f sql/schema.sql
+          psql -X -v ON_ERROR_STOP=1 -f sql/migration_v0_2.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/test_db_v02.sql
+      - name: Reproduce baseline integrity gaps
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/test_db_v021_baseline.sql
+      - name: Apply integrity fixes and verify PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f sql/migration_v0_2_1.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/test_db_v02.sql
+          psql -X -v ON_ERROR_STOP=1 -f tests/test_db_v021.sql

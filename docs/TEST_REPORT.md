@@ -1,5 +1,27 @@
 # 테스트 보고
 
+## Phase 2.1 실행 기록 — 2026-10-11
+
+기준: `2ff7987`, 브랜치: `feature/phase-2-1-validation`. 각 Python 종료 코드를 `$LASTEXITCODE`로 확인했다.
+
+| 실제 실행 | 결과 |
+|---|---|
+| `git fetch origin main`, SHA 비교 | 성공; main과 기준 일치, 시작 시 변경 없음 |
+| 토큰 존재 여부 확인 | 현재 프로세스에 없음. 값은 출력/기록하지 않음 |
+| `& C:\Python310-64\python.exe scripts\validate_v02.py --mode live --limit 30 --output .local\tmdb_live_v0_2_1.csv` | **종료 2**, 토큰 누락. API 조회/실시간 CSV 생성 없음 |
+| `& C:\Python310-64\python.exe -m unittest discover -s tests -v` | 초기 31개, 최종 **33개 통과**, 종료 0; 기존 20+추가 13, API는 모의 테스트 |
+| `& C:\Python310-64\python.exe -m compileall -q scripts tests` | 종료 0 |
+| `& C:\Python310-64\python.exe scripts\validate_ott_episodes.py data\ott_upload_manual_v0_2.csv` | 종료 0; 관측 0/오류 0 |
+| `& C:\Python310-64\python.exe scripts\validate_v02.py --mode offline --limit 30 --output .local\tmdb_offline_v0_2_1.csv` | 종료 0; 30개, 식별 3/검토 27; 과거 관측값 재검증 |
+| PostgreSQL/psql/initdb/pg_ctl/Docker 탐색 | 실행 가능한 로컬 도구/테스트 DB를 확인하지 못함 |
+| 원격 PostgreSQL 16 CI | 실행 전. 실제 결과 확인 후 보고서 갱신 예정 |
+| 원본 SHA-256 및 `git diff --name-only main -- data` | 원본 해시 일치, data 변경 없음 |
+| `git diff --check` | 종료 0 |
+
+API 오류 검증 범위: 401 오류 메시지/토큰 비노출, 503/연결 실패 4회 시도 후 실패 기록, 비정상 Retry-After, JSON 파싱 실패, 잘못된 KR/시즌 응답, 필수 필드 누락, 다음 작품으로 처리 지속, 별도 errors/missing/review CSV, legacy 원본 덮어쓰기 거부. 실제 인증/API 성공을 의미하지 않는다.
+
+SQL 검증 계획은 실제 PostgreSQL에서 v0.2 결함 2개를 먼저 재현하고 fixture를 rollback한 뒤, v0.2.1 수정으로 거부되는지 검사한다. SQL 실패가 발생하면 로그와 수정/재실행 결과를 남긴다. 아래는 이전 작업의 실제 기록을 보존한 것이다.
+
 실행일: 2026-10-11 (Asia/Seoul). 실행 환경: Windows 11, `C:\Python310-64\python.exe` (3.10.1). 작업 브랜치: `feature/github-development-reporting`. 기준 커밋: `6c74d170ce2df47d64d6e43ac3477541a9546492`.
 
 ## 이번 작업에서 실제 실행한 검증
