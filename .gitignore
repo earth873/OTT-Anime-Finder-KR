@@ -7,3 +7,17 @@ __pycache__/
 venv/
 .codex/
 *.log
+
+# Local checks and credentials must never be committed.
+.local/
+.aws/
+.ssh/
+credentials.json
+credentials.*.json
+client_secret*.json
+token.json
+tokens.json
+*.pem
+*.key
+*.p12
+*.pfx

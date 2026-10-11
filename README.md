@@ -2,6 +2,36 @@
 
 v0.2는 기존 30개 결과를 보존하며 작품 식별과 실제 OTT 회차 검증을 분리합니다. 현재 실행에서는 TMDB 토큰이 없어 **오프라인 재검증만 완료**했습니다. 식별 근거 일치 3개, 수동 검토 27개, 실제 OTT 회차 관측 0건입니다. 자세한 결과·제한·조사 출처는 [research_report_v0_2.md](research_report_v0_2.md)를 확인하세요.
 
+## GitHub 개발 및 보고
+
+저장소: [earth873/OTT-Anime-Finder-KR](https://github.com/earth873/OTT-Anime-Finder-KR). Phase 2 결과는 main의 `6c74d170ce2df47d64d6e43ac3477541a9546492`에 반영되어 있습니다. 이후 작업은 feature 브랜치에서 테스트·문서화한 뒤 push하고, main을 대상으로 PR을 열어 리뷰합니다. main 직접 작업·자동 병합·force push는 하지 않습니다.
+
+- [개발 상태](docs/DEVELOPMENT_STATUS.md): 구현 항목과 미구현 항목.
+- [테스트 보고](docs/TEST_REPORT.md): 실제 실행 명령·종료 코드·실패 및 미실행 사유.
+- [알려진 문제](docs/KNOWN_ISSUES.md): 미해결 문제와 다음 단계.
+- [개발 작업 규칙](AGENTS.md): 브랜치·기존 파일 보존·검증·보고 규칙.
+
+GitHub Actions의 `Python validation`은 push/PR에서 Python 3.10 단위 테스트·구문 검사·수동 양식 검사·오프라인 재처리를 실행합니다. API 토큰을 사용하지 않으며 실제 OTT 회차나 PostgreSQL을 검증하지 않습니다. required checks 및 main 보호 규칙은 저장소 설정에서 별도로 적용해야 합니다.
+
+새 작업의 기본 순서:
+
+```powershell
+git status --short --branch
+git fetch origin
+# 작업 폴더 변경을 먼저 확인하고, 깨끗한 main에서 feature 브랜치를 만듭니다.
+git switch main
+git pull --ff-only origin main
+git switch -c feature/<작업명>
+& C:\Python310-64\python.exe -m unittest discover -s tests -v
+& C:\Python310-64\python.exe -m compileall -q scripts tests
+# 문서 갱신과 비밀정보/변경내용 확인 후 필요한 파일만 명시적으로 add/commit합니다.
+git push -u origin feature/<작업명>
+```
+
+GitHub CLI가 있으면 `gh pr create --base main --head feature/<작업명>`을 사용합니다. 없으면 연결된 GitHub 도구 또는 GitHub 화면으로 PR을 생성합니다. PR을 만들지 못하면 실패 이유와 브랜치 URL을 보고합니다. 리뷰 후 사람이 병합 여부를 결정합니다.
+
+`.env`, 인증 JSON, 개인키, 로컬 검사 결과는 `.gitignore`에서 제외합니다. `.env.example`은 기존 규칙에 따라 추적할 수 있으므로 **값 없는 예시만** 넣습니다. 이미 추적된 파일은 ignore 규칙으로 제거되지 않으므로 커밋 전 staged 파일과 내용도 확인해야 합니다. 토큰은 실행 프로세스 환경변수로만 전달합니다.
+
 ## v0.2 실행
 
 ```powershell
