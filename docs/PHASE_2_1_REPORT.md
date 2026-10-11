@@ -24,7 +24,19 @@
 3. `sql/migration_v0_2_1.sql`: 추가 제약/트리거/공개 뷰 보완.
 4. `tests/test_db_v02.sql` 재실행 → `tests/test_db_v021.sql`: 확장 실제 SQL assertion, fixture 모두 rollback.
 
-**원격 DB 결과는 현재 실행 전이다.** 실제 결과·실패·재시도는 CI 확인 후 이 보고서에 기록한다. SQL 작성/정적 검토만으로 실행 성공을 주장하지 않는다.
+**원격 실제 PostgreSQL 검증 성공.** [GitHub Actions run 38143396065](https://github.com/earth873/OTT-Anime-Finder-KR/actions/runs/38143396065)은 Python/DB job 모두 success다. 검증 코드 커밋은 `d7d02a01d44706282ac2e7fa14dd5ae739ddf463`, DB job은 `114481671598`이다. 서버 로그의 PostgreSQL 버전은 **16.15**이며 각 psql 명령과 SQL 결과를 확인했다. 기존 v0.2 SQL 테스트는 수정 전·후 모두 통과했고, 기준 버전 결함 2개가 재현됐으며, 확장 실제 SQL assertion **22개 모두 통과**했다. fixture는 모두 rollback했고 테스트 컨테이너는 CI 종료 시 폐기됐다. 실제 API 조회를 대신한 결과가 아니다.
+
+로그 핵심:
+
+```text
+REPRODUCED 2 baseline gaps: cross-anime mapping and future verified_at accepted
+passed_assertions
+22
+(22 rows)
+ROLLBACK
+```
+
+SQL 문법/제약/트리거/뷰 실행 오류는 이 CI에서 발생하지 않았다. 발견한 무결성 결함은 '오류를 throw하지 않고 잘못된 관계를 허용'하는 문제였으며, 수정 전 허용/수정 후 차단을 별도 검사했다. 로컬 DB 실행은 도구가 없어 미실행이고 운영 DB는 그대로다.
 
 ## 무결성 검사 항목
 
@@ -70,4 +82,8 @@ pg_isready가 준비 완료를 표시한 뒤 SQL을 실행하고 각 명령이 �
 
 ## 남은 문제
 
-토큰 설정 후 실제 TMDB 30개 조회, 27개 독립 작품 검토/헌터 판본 결정, 현재 OTT 회차 관측, 라프텔 데이터 허가, 실제 파트 의미 검토, DB 적재/RLS, main 보호 설정은 남아 있다. PostgreSQL 실제 CI 결과는 확인 전이다. main 자동 병합/force push는 하지 않는다.
+토큰 설정 후 실제 TMDB 30개 조회, 27개 독립 작품 검토/헌터 판본 결정, 현재 OTT 회차 관측, 라프텔 데이터 허가, 실제 파트 의미 검토, DB 적재/RLS, main 보호 설정은 남아 있다. PostgreSQL 실제 CI는 성공했으나 동시 쓰기/운영 데이터 업그레이드/로컬 DB 실행은 미검증이다. main 자동 병합/force push는 하지 않는다.
+
+## GitHub 리뷰 및 변경 범위
+
+[PR #2](https://github.com/earth873/OTT-Anime-Finder-KR/pull/2), 브랜치 `feature/phase-2-1-validation` → main. 기존 data 차이 없음, 원본 해시 유지, 비밀정보 검사 의심 항목 0건. 변경 12개 파일: README, Python 수집기 2개, 추가 migration, Python 추가 테스트, SQL 재현/확장 테스트 2개, CI workflow, 개발 상태/테스트/알려진 문제/본 보고서 4개. 최종 보고서는 이 검증 코드 커밋 위에 문서 결과 기록 커밋으로 추가한다.

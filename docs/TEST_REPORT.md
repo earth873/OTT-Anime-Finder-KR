@@ -14,13 +14,16 @@
 | `& C:\Python310-64\python.exe scripts\validate_ott_episodes.py data\ott_upload_manual_v0_2.csv` | 종료 0; 관측 0/오류 0 |
 | `& C:\Python310-64\python.exe scripts\validate_v02.py --mode offline --limit 30 --output .local\tmdb_offline_v0_2_1.csv` | 종료 0; 30개, 식별 3/검토 27; 과거 관측값 재검증 |
 | PostgreSQL/psql/initdb/pg_ctl/Docker 탐색 | 실행 가능한 로컬 도구/테스트 DB를 확인하지 못함 |
-| 원격 PostgreSQL 16 CI | 실행 전. 실제 결과 확인 후 보고서 갱신 예정 |
+| 원격 PostgreSQL 16 CI (run 38143396065) | **성공**, 기존 SQL 테스트 수정 전후 통과, 결함 2개 재현, 확장 assertion **22개 통과** |
+| 원격 Windows/Python 3.10 CI (같은 run) | Unit tests/Compile/manual/offline 모든 step success |
 | 원본 SHA-256 및 `git diff --name-only main -- data` | 원본 해시 일치, data 변경 없음 |
 | `git diff --check` | 종료 0 |
 
 API 오류 검증 범위: 401 오류 메시지/토큰 비노출, 503/연결 실패 4회 시도 후 실패 기록, 비정상 Retry-After, JSON 파싱 실패, 잘못된 KR/시즌 응답, 필수 필드 누락, 다음 작품으로 처리 지속, 별도 errors/missing/review CSV, legacy 원본 덮어쓰기 거부. 실제 인증/API 성공을 의미하지 않는다.
 
-SQL 검증 계획은 실제 PostgreSQL에서 v0.2 결함 2개를 먼저 재현하고 fixture를 rollback한 뒤, v0.2.1 수정으로 거부되는지 검사한다. SQL 실패가 발생하면 로그와 수정/재실행 결과를 남긴다. 아래는 이전 작업의 실제 기록을 보존한 것이다.
+실제 PostgreSQL에서 v0.2 결함 2개를 먼저 재현하고 fixture를 rollback한 뒤, v0.2.1 수정으로 거부되는지 검사했다. 이 실행에 Python/SQL 테스트 실패는 없었다. 토큰 누락 live 종료 2는 숨기지 않고 미실행으로 기록했다. 업로드 대상 35개 파일의 토큰 형식/개인키/위험 경로 및 환경 토큰 포함 검사에서 의심 항목 0건(모든 비밀 형식의 검출 보장은 아님). staged 차이/원본 data 보존을 확인했다.
+
+원격 증거: [run 38143396065](https://github.com/earth873/OTT-Anime-Finder-KR/actions/runs/38143396065), 코드 커밋 `d7d02a01d44706282ac2e7fa14dd5ae739ddf463`, DB job `114481671598`. PostgreSQL 서버 로그는 16.15를 표시했고 `REPRODUCED 2 baseline gaps`, `passed_assertions=22`, `ROLLBACK`을 확인했다. 이는 모의 DB 검사가 아니며 Docker 격리 서비스에서 실제 psql 명령을 실행한 결과다. 아래는 이전 작업의 실제 기록을 보존한 것이다.
 
 실행일: 2026-10-11 (Asia/Seoul). 실행 환경: Windows 11, `C:\Python310-64\python.exe` (3.10.1). 작업 브랜치: `feature/github-development-reporting`. 기준 커밋: `6c74d170ce2df47d64d6e43ac3477541a9546492`.
 

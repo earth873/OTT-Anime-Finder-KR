@@ -11,7 +11,7 @@ v0.2는 기존 30개 결과를 보존하며 작품 식별과 실제 OTT 회차 �
 - [알려진 문제](docs/KNOWN_ISSUES.md): 미해결 문제와 다음 단계.
 - [개발 작업 규칙](AGENTS.md): 브랜치·기존 파일 보존·검증·보고 규칙.
 
-GitHub Actions의 `Python validation`은 push/PR에서 Python 3.10 단위 테스트·구문 검사·수동 양식 검사·오프라인 재처리를 실행합니다. API 토큰을 사용하지 않으며 실제 OTT 회차나 PostgreSQL을 검증하지 않습니다. required checks 및 main 보호 규칙은 저장소 설정에서 별도로 적용해야 합니다.
+GitHub Actions의 `Python validation`은 push/PR에서 Python 3.10 단위 테스트·구문 검사·수동 양식 검사·오프라인 재처리와, 별도 PostgreSQL 서비스의 실제 SQL 검증을 실행합니다. API 토큰을 사용하지 않으며 실제 OTT 회차를 확인하지 않습니다. required checks 및 main 보호 규칙은 저장소 설정에서 별도로 적용해야 합니다.
 
 새 작업의 기본 순서:
 
@@ -83,7 +83,7 @@ psql -v ON_ERROR_STOP=1 -d ott_anime_test -f sql\migration_v0_2_1.sql
 psql -v ON_ERROR_STOP=1 -d ott_anime_test -f tests\test_db_v021.sql
 ```
 
-DB 연결·실제 적용·권한/RLS·데이터 적재·최종 사이트는 아직 구현하지 않았습니다. 라프텔 자동 수집도 공식 허가/API를 확인하지 못해 추가하지 않았습니다.
+운영 DB 연결/적용·권한/RLS·데이터 적재·최종 사이트는 아직 구현하지 않았습니다. 독립 PostgreSQL CI에서 실제 SQL 검증은 Phase 2.1에서 통과했습니다. 라프텔 자동 수집도 공식 허가/API를 확인하지 못해 추가하지 않았습니다.
 
 ## 보존된 v0.1 조회 기능
 
