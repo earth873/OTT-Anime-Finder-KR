@@ -17,7 +17,7 @@ from validate_tmdb import HEADERS, ROOT, get
 EXTRA = ['display_title_ko', 'previous_tmdb_id', 'previous_match_status',
          'identity_reason', 'identity_source_url', 'metadata_origin', 'metadata_status',
          'provider_verification_status', 'season_detail_status', 'season_mapping_status',
-         'revalidated_at_utc', 'error_stage', 'error_type']
+         'revalidated_at_utc', 'error_stage', 'error_type', 'missing_fields']
 SEASON_HEADERS = ['query', 'tmdb_id', 'tmdb_season_id', 'tmdb_season_number',
                   'season_name', 'official_episode_count', 'air_date', 'source_url',
                   'checked_at_utc', 'scope', 'ott_mapping_status']
@@ -90,6 +90,8 @@ def refresh_live(samples, baseline, rules, token, delay):
         try:
             if rule:
                 candidate = get(f"/tv/{rule['tmdb_id']}", {'language': 'ko-KR'}, token)
+                if not isinstance(candidate, dict):
+                    raise ValueError('invalid TV response')
                 status, reason = assess_identity(candidate, rule)
             else:
                 found = []
@@ -105,34 +107,66 @@ def refresh_live(samples, baseline, rules, token, delay):
             if candidate:
                 cid = candidate['id']
                 observed = datetime.now(timezone.utc).isoformat()
-                row.update(tmdb_id=cid, matched_title=candidate.get('name', ''),
+                if not isinstance(candidate, dict):
+                    raise ValueError('invalid TV response')
+                row.update(tmdb_id=cid, matched_title=candidate.get('name', '') or '',
                            original_name=candidate.get('original_name', ''),
                            first_air_date=candidate.get('first_air_date', ''),
                            season_count=candidate.get('number_of_seasons', ''),
                            official_episode_count=candidate.get('number_of_episodes', ''),
                            production_status=candidate.get('status', ''),
                            tmdb_url=f'https://www.themoviedb.org/tv/{cid}',
-                           checked_at_utc=observed, metadata_status='collected', season_detail_status='collected')
-                for season in candidate.get('seasons', []):
+                           checked_at_utc=observed, metadata_status='collected', season_detail_status='not_collected')
+                required = ('name', 'original_name', 'first_air_date', 'number_of_seasons', 'number_of_episodes')
+                missing = [key for key in required if candidate.get(key) in (None, '')]
+                for key, column in [('number_of_seasons', 'season_count'), ('number_of_episodes', 'official_episode_count')]:
+                    value = candidate.get(key)
+                    if type(value) is not int or value < 0:
+                        row[column] = ''
+                        if key not in missing:
+                            missing.append(key + ':invalid')
+                if missing:
+                    row.update(metadata_status='incomplete', missing_fields=' | '.join(missing))
+                stage = 'seasons'
+                season_list = candidate.get('seasons')
+                if season_list is None:
+                    missing.append('seasons')
+                    row.update(metadata_status='incomplete', missing_fields=' | '.join(missing))
+                if season_list is not None:
+                    if not isinstance(season_list, list):
+                        raise ValueError('invalid seasons response')
+                    row['season_detail_status'] = 'collected'
+                for season in season_list or []:
                     seasons.append(dict(query=ko, tmdb_id=cid, tmdb_season_id=season['id'],
                                         tmdb_season_number=season['season_number'], season_name=season.get('name', ''),
                                         official_episode_count=season.get('episode_count', ''), air_date=season.get('air_date') or '',
                                         source_url=f"https://www.themoviedb.org/tv/{cid}/season/{season['season_number']}",
                                         checked_at_utc=observed, scope='TMDB_METADATA_NOT_OTT_UPLOAD', ott_mapping_status='review_required'))
                 stage = 'providers'
-                providers = get(f'/tv/{cid}/watch/providers', {}, token).get('results', {}).get('KR', {})
-                row.update(provider_source_url=providers.get('link', ''),
-                           provider_verification_status='series_hint_not_episode_verified')
+                payload = get(f'/tv/{cid}/watch/providers', {}, token)
+                if not isinstance(payload, dict) or not isinstance(payload.get('results'), dict):
+                    raise ValueError('invalid providers response')
+                providers = payload['results'].get('KR')
+                if providers is None:
+                    row['provider_verification_status'] = 'no_kr_data_not_unavailable'
+                    providers = {}
+                elif not isinstance(providers, dict):
+                    raise ValueError('invalid KR response')
+                else:
+                    row['provider_verification_status'] = 'series_hint_not_episode_verified'
+                row['provider_source_url'] = providers.get('link', '')
                 for field, source in [('providers_kr_subscription', 'flatrate'),
                                       ('providers_kr_rent', 'rent'), ('providers_kr_buy', 'buy')]:
                     row[field] = ' | '.join(sorted({p['provider_name'] for p in providers.get(source, [])}))
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError, KeyError) as exc:
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError, KeyError, TypeError, AttributeError) as exc:
             # Keep partial metadata, never emit request headers or exception messages containing secrets.
             row.update(error_stage=stage, error_type=type(exc).__name__)
             if stage == 'identity':
                 row.update(match_status='review_required', identity_reason='api_identity_error', metadata_status='error')
-            else:
+            elif stage == 'providers':
                 row['provider_verification_status'] = 'error'
+            else:
+                row['season_detail_status'] = 'error'
         rows.append(row)
         print(f"{ko}: {row['match_status']} {row['error_type']}")
         time.sleep(delay)
@@ -194,6 +228,11 @@ def main():
     write_csv(output.with_name(output.stem + '_review_required.csv'), review_headers,
               [{key: row[key] for key in review_headers} for row in rows
                if row['match_status'] != 'identity_verified'])
+    write_csv(output.with_name(output.stem + '_errors.csv'), HEADERS + EXTRA,
+              [row for row in rows if row['error_type']])
+    write_csv(output.with_name(output.stem + '_missing.csv'), HEADERS + EXTRA,
+              [row for row in rows if row['missing_fields'] or row['match_status'] == 'not_found'
+               or row['provider_verification_status'] == 'no_kr_data_not_unavailable'])
     summary = metrics(baseline, rows, args.mode)
     summary.update(revalidated_at_utc=now, input_sha256=hashlib.sha256(source.read_bytes()).hexdigest())
     output.with_suffix('.metrics.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding='utf-8')

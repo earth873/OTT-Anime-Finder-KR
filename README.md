@@ -11,7 +11,7 @@ v0.2는 기존 30개 결과를 보존하며 작품 식별과 실제 OTT 회차 �
 - [알려진 문제](docs/KNOWN_ISSUES.md): 미해결 문제와 다음 단계.
 - [개발 작업 규칙](AGENTS.md): 브랜치·기존 파일 보존·검증·보고 규칙.
 
-GitHub Actions의 `Python validation`은 push/PR에서 Python 3.10 단위 테스트·구문 검사·수동 양식 검사·오프라인 재처리를 실행합니다. API 토큰을 사용하지 않으며 실제 OTT 회차나 PostgreSQL을 검증하지 않습니다. required checks 및 main 보호 규칙은 저장소 설정에서 별도로 적용해야 합니다.
+GitHub Actions의 `Python validation`은 push/PR에서 Python 3.10 단위 테스트·구문 검사·수동 양식 검사·오프라인 재처리와, 별도 PostgreSQL 서비스의 실제 SQL 검증을 실행합니다. API 토큰을 사용하지 않으며 실제 OTT 회차를 확인하지 않습니다. required checks 및 main 보호 규칙은 저장소 설정에서 별도로 적용해야 합니다.
 
 새 작업의 기본 순서:
 
@@ -33,6 +33,14 @@ GitHub CLI가 있으면 `gh pr create --base main --head feature/<작업명>`을
 `.env`, 인증 JSON, 개인키, 로컬 검사 결과는 `.gitignore`에서 제외합니다. `.env.example`은 기존 규칙에 따라 추적할 수 있으므로 **값 없는 예시만** 넣습니다. 이미 추적된 파일은 ignore 규칙으로 제거되지 않으므로 커밋 전 staged 파일과 내용도 확인해야 합니다. 토큰은 실행 프로세스 환경변수로만 전달합니다.
 
 ## v0.2 실행
+
+Phase 2.1 검증 상태와 실제/모의 실행 구분은 [PHASE_2_1_REPORT.md](docs/PHASE_2_1_REPORT.md)를 확인하세요. 현재 프로세스의 TMDB 토큰은 없으므로 실시간 조회는 미실행입니다. 조회할 때는 기존 CSV와 다른 경로를 지정합니다.
+
+```powershell
+& C:\Python310-64\python.exe scripts\validate_v02.py --mode live --limit 30 --output .local\tmdb_live_v0_2_1.csv
+```
+
+결과 외에 `_errors.csv`, `_missing.csv`, `_review_required.csv`를 분리합니다. KR 제공 데이터가 없으면 `no_kr_data_not_unavailable`이며 미제공을 뜻하지 않습니다. API 응답에 필수 상세 필드/시즌 요약이 없으면 `incomplete` 및 `missing_fields`에 기록합니다. legacy 조회도 기존 `data/tmdb_results.csv` 덮어쓰기를 거부하므로 `--output`을 지정해야 합니다.
 
 ```powershell
 Set-Location C:\ott_anime_validation_v0_1
@@ -64,14 +72,18 @@ Set-Location C:\ott_anime_validation_v0_1
 
 기존 DB는 `sql/migration_v0_2.sql`을 한 번 적용합니다. 새 PostgreSQL DB는 `sql/schema.sql` → `sql/migration_v0_2.sql` 순서입니다. 미확인 데이터는 공개용 뷰에 표시하지 않으며, 공개용 회차는 최근 7일 확인 정책을 적용합니다. 마이그레이션은 재실행용이 아닙니다.
 
+Phase 2.1 테스트 DB에는 이어서 `sql/migration_v0_2_1.sql`을 적용해 다른 작품의 회차 매핑과 매핑을 깨뜨리는 부모 변경을 차단합니다. 같은 작품의 여러 정규 시즌에 걸친 OTT 파트는 허용합니다. 운영 DB 적용은 이번 작업 범위가 아닙니다. GitHub Actions의 별도 PostgreSQL 16 서비스에서 SQL을 실제 실행하며, 로컬 독립 환경 구축 절차는 Phase 2.1 보고서에 있습니다.
+
 ```powershell
 # PostgreSQL 도구/별도 테스트 DB를 준비한 뒤 실행 (이번 작업에서는 미실행)
 psql -v ON_ERROR_STOP=1 -d ott_anime_test -f sql\schema.sql
 psql -v ON_ERROR_STOP=1 -d ott_anime_test -f sql\migration_v0_2.sql
 psql -v ON_ERROR_STOP=1 -d ott_anime_test -f tests\test_db_v02.sql
+psql -v ON_ERROR_STOP=1 -d ott_anime_test -f sql\migration_v0_2_1.sql
+psql -v ON_ERROR_STOP=1 -d ott_anime_test -f tests\test_db_v021.sql
 ```
 
-DB 연결·실제 적용·권한/RLS·데이터 적재·최종 사이트는 아직 구현하지 않았습니다. 라프텔 자동 수집도 공식 허가/API를 확인하지 못해 추가하지 않았습니다.
+운영 DB 연결/적용·권한/RLS·데이터 적재·최종 사이트는 아직 구현하지 않았습니다. 독립 PostgreSQL CI에서 실제 SQL 검증은 Phase 2.1에서 통과했습니다. 라프텔 자동 수집도 공식 허가/API를 확인하지 못해 추가하지 않았습니다.
 
 ## 보존된 v0.1 조회 기능
 
@@ -89,8 +101,8 @@ DB 연결·실제 적용·권한/RLS·데이터 적재·최종 사이트는 아�
 
 ```powershell
 $env:TMDB_READ_ACCESS_TOKEN = '여기에_읽기_토큰'
-py -3 scripts/validate_tmdb.py --limit 5
-py -3 scripts/validate_tmdb.py --limit 30
+& C:\Python310-64\python.exe scripts/validate_tmdb.py --limit 5 --output .local\tmdb_legacy_check.csv
+& C:\Python310-64\python.exe scripts/validate_tmdb.py --limit 30 --output .local\tmdb_legacy_check_30.csv
 ```
 
 파이썬 표준 라이브러리만 사용하므로 pip 설치가 필요 없습니다. 결과는 `data/tmdb_results.csv`에 저장됩니다. 엑셀에서 UTF-8(BOM)으로 열 수 있습니다. `match_status=review_required`는 사람이 실제 작품을 확인해야 합니다. 수집값이 있다고 해서 OTT의 현재 시청 가능 에피소드까지 확정된 것은 아닙니다.

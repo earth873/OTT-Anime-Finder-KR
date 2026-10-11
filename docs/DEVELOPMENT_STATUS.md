@@ -1,5 +1,18 @@
 # 개발 상태
 
+## Phase 2.1 현재 검증
+
+기준 main: `2ff79874f78a08d6a360508a2310d2425363bcb5`, 작업: `feature/phase-2-1-validation` (2026-10-11).
+최신 main과 기준 커밋이 일치하며 기존 데이터는 변경하지 않았다. Python 최종 33개 테스트와 구문 검사를 로컬에서 통과했다. 신규 13개 테스트는 실제 HTTP 요청 없이 오류/누락/비정상 회차 값/분리 출력/원본 보존을 확인한다.
+
+현재 프로세스의 TMDB 토큰이 없어 live 조회는 종료 2로 중단했다. 실시간 CSV를 생성하지 않았으며 기존 30개 오프라인 재처리만 별도 `.local` 경로에서 실행했다(식별 3/검토 27). 실제 OTT 관측은 계속 0건이다.
+
+로컬 PostgreSQL/Docker는 없다. 독립 GitHub Actions PostgreSQL 16 서비스를 추가해 v0.2 스키마/기존 SQL 테스트/기준 버전 결함 재현/추가 마이그레이션/확장 SQL 테스트를 **실제 실행해 통과**했다. 기준 버전 결함 2개 재현, 수정 후 확장 assertion **22개 통과**를 로그에서 확인했다. [CI run 38143396065](https://github.com/earth873/OTT-Anime-Finder-KR/actions/runs/38143396065)은 Python/DB 두 job 모두 success이며 검증 코드 커밋은 `d7d02a01d44706282ac2e7fa14dd5ae739ddf463`다. 운영 DB는 접근하지 않았다.
+
+보완: KR 응답 없음과 미제공 구분, 누락 필드와 오류/검토 CSV 분리, 비정상 Retry-After 처리, legacy 원본 보호, 다른 작품으로 회차 매핑하는 오류/부모 변경 차단, 미래 검증 시각/공개 제한. 새 최종 서비스 기능이나 임의 회차 데이터는 추가하지 않았다.
+
+자세한 실행 결과와 독립 DB 절차: [PHASE_2_1_REPORT.md](PHASE_2_1_REPORT.md). 아래는 Phase 2 및 GitHub 보고체계 도입 당시 기록이다.
+
 기준일: 2026-10-11 (Asia/Seoul). 프로젝트: OTT Anime Finder KR v0.2.
 
 ## 저장소 및 기준 버전

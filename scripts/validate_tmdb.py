@@ -2,7 +2,7 @@
 """TMDB read-only evaluation for Korean anime OTT catalog matching.
 Noncommercial evaluation only; review TMDB terms before any public/commercial launch.
 """
-import argparse,csv,json,os,sys,time,urllib.request,urllib.parse,urllib.error
+import argparse,csv,json,math,os,sys,time,urllib.request,urllib.parse,urllib.error
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 HEADERS=['query','tmdb_id','matched_title','original_name','first_air_date','match_status','match_candidates','providers_kr_subscription','providers_kr_rent','providers_kr_buy','season_count','official_episode_count','production_status','tmdb_url','provider_source_url','checked_at_utc','provider_scope','ott_latest_episode','ott_episode_verification']
@@ -16,8 +16,9 @@ def get(path,params,token):
             with urllib.request.urlopen(req,timeout=20) as resp: return json.load(resp)
         except urllib.error.HTTPError as e:
             if e.code not in (429,500,502,503,504) or attempt==3: raise
-            try:delay=float(e.headers.get('Retry-After') or 2**attempt)
+            try:delay=float((e.headers or {}).get('Retry-After') or 2**attempt)
             except (TypeError,ValueError):delay=2**attempt
+            if not math.isfinite(delay) or delay < 0:delay=2**attempt
         except (TimeoutError,urllib.error.URLError):
             if attempt==3: raise
             delay=2**attempt
@@ -30,6 +31,8 @@ def choose(results,english):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--limit',type=int,default=30);p.add_argument('--delay',type=float,default=.3);p.add_argument('--output',default=str(ROOT/'data'/'tmdb_results.csv'));args=p.parse_args()
+    if Path(args.output).resolve() == (ROOT/'data'/'tmdb_results.csv').resolve() and (ROOT/'data'/'tmdb_results.csv').exists():
+        p.error('Existing baseline cannot be overwritten; use --output with a new path.')
     token=os.environ.get('TMDB_READ_ACCESS_TOKEN','').strip()
     if not token:sys.exit('TMDB_READ_ACCESS_TOKEN 환경변수를 설정해 주세요. 결과는 생성되지 않았습니다.')
     from datetime import datetime,timezone
